@@ -663,3 +663,56 @@ describe("useStore", () => {
     });
   });
 });
+
+describe("local files (desktop app)", () => {
+  beforeEach(() => {
+    resetStore();
+    localStorage.clear();
+  });
+
+  it("opens a file as a new document linked to its path", () => {
+    useStore.getState().openLocalFile("/tmp/a.md", "a.md", "# A");
+    const { currentDocument, documents } = useStore.getState();
+    expect(documents).toHaveLength(1);
+    expect(currentDocument).toMatchObject({ title: "a.md", body: "# A", localFile: { path: "/tmp/a.md" } });
+  });
+
+  it("marks edits as unsaved and clears the flag after saving", () => {
+    const store = useStore.getState();
+    store.openLocalFile("/tmp/a.md", "a.md", "# A");
+    useStore.getState().updateDocumentBody("# A edited");
+    expect(useStore.getState().currentDocument?.localFile?.unsaved).toBe(true);
+
+    const id = useStore.getState().currentDocument!.id;
+    useStore.getState().markLocalFileSaved(id, "# A edited");
+    expect(useStore.getState().currentDocument?.localFile?.unsaved).toBe(false);
+    expect(useStore.getState().documents[0].localFile?.unsaved).toBe(false);
+  });
+
+  it("stays unsaved when typing continued during the save", () => {
+    useStore.getState().openLocalFile("/tmp/a.md", "a.md", "# A");
+    useStore.getState().updateDocumentBody("# A1");
+    const id = useStore.getState().currentDocument!.id;
+    useStore.getState().updateDocumentBody("# A12");
+    useStore.getState().markLocalFileSaved(id, "# A1");
+    expect(useStore.getState().currentDocument?.localFile?.unsaved).toBe(true);
+  });
+
+  it("reopening refreshes from disk, but keeps unsaved edits", () => {
+    useStore.getState().openLocalFile("/tmp/a.md", "a.md", "# A");
+    useStore.getState().openLocalFile("/tmp/a.md", "a.md", "# A from disk");
+    expect(useStore.getState().documents).toHaveLength(1);
+    expect(useStore.getState().currentDocument?.body).toBe("# A from disk");
+
+    useStore.getState().updateDocumentBody("# mine");
+    useStore.getState().openLocalFile("/tmp/a.md", "a.md", "# disk again");
+    expect(useStore.getState().documents).toHaveLength(1);
+    expect(useStore.getState().currentDocument?.body).toBe("# mine");
+  });
+
+  it("does not mark ordinary documents as local files", () => {
+    useStore.getState().createDocument();
+    useStore.getState().updateDocumentBody("x");
+    expect(useStore.getState().currentDocument?.localFile).toBeUndefined();
+  });
+});

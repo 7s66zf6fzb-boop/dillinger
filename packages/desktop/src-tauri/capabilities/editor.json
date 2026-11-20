@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "editor",
+  "description": "Lets the local editor page read files opened from Finder and save them back.",
+  "windows": [
+    "main"
+  ],
+  "remote": {
+    "urls": [
+      "http://localhost:3000/*"
+    ]
+  },
+  "permissions": [
+    "allow-take-opened-files",
+    "allow-save-file"
+  ]
+}

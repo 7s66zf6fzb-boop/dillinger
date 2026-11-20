@@ -10,6 +10,12 @@ export interface Document {
     owner: string;
     branch: string;
   };
+  /** Set when the document was opened from a file on disk in the desktop app. */
+  localFile?: {
+    path: string;
+    /** Edited since it was last opened or saved to disk. */
+    unsaved?: boolean;
+  };
 }
 
 export interface UserSettings {

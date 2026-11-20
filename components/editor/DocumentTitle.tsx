@@ -75,12 +75,22 @@ export function DocumentTitle() {
           <h2 className="text-text-primary font-semibold text-base truncate">
             {currentDocument.title || DEFAULT_DOCUMENT_TITLE}
           </h2>
-          <span
-            aria-live="polite"
-            className={`text-xs text-text-muted ml-2 transition-opacity duration-200 ${isDirty ? "" : "opacity-50"}`}
-          >
-            {isDirty ? "Unsaved" : "Saved"}
-          </span>
+          {currentDocument.localFile ? (
+            <span
+              aria-live="polite"
+              title={currentDocument.localFile.path}
+              className={`text-xs text-text-muted ml-2 transition-opacity duration-200 ${currentDocument.localFile.unsaved ? "" : "opacity-50"}`}
+            >
+              {currentDocument.localFile.unsaved ? "Unsaved changes · ⌘S to save" : "Saved to file"}
+            </span>
+          ) : (
+            <span
+              aria-live="polite"
+              className={`text-xs text-text-muted ml-2 transition-opacity duration-200 ${isDirty ? "" : "opacity-50"}`}
+            >
+              {isDirty ? "Unsaved" : "Saved"}
+            </span>
+          )}
           <button
             onClick={() => setIsEditing(true)}
             aria-label="Edit title"

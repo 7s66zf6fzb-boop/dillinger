@@ -25,6 +25,8 @@ interface AppState {
   // Document Actions
   createDocument: () => void;
   createImportedDocument: (title: string, body: string) => void;
+  openLocalFile: (path: string, name: string, body: string) => void;
+  markLocalFileSaved: (id: string, savedBody: string) => void;
   selectDocument: (id: string) => void;
   deleteDocument: (id: string) => void;
   updateDocumentBody: (body: string) => void;
@@ -95,6 +97,45 @@ export const useStore = create<AppState>((set, get) => ({
     get().persist();
   },
 
+  openLocalFile: (path: string, name: string, body: string) => {
+    const existing = get().documents.find((d) => d.localFile?.path === path);
+
+    // Reopening a file keeps edits that have not been saved yet; otherwise show what is on disk.
+    let doc: Document;
+    if (existing?.localFile?.unsaved) {
+      doc = existing;
+    } else if (existing) {
+      doc = { ...existing, body, localFile: { path } };
+    } else {
+      doc = { ...createDefaultDocument(), title: name, body, localFile: { path } };
+    }
+
+    set((state) => ({
+      documents: existing
+        ? state.documents.map((d) => (d.id === doc.id ? doc : d))
+        : [...state.documents, doc],
+      currentDocument: doc,
+    }));
+    get().persist();
+  },
+
+  markLocalFileSaved: (id: string, savedBody: string) => {
+    const doc = get().documents.find((d) => d.id === id);
+    if (!doc?.localFile) return;
+
+    // Typing may have continued while the save was in flight.
+    const updated = {
+      ...doc,
+      localFile: { path: doc.localFile.path, unsaved: doc.body !== savedBody },
+    };
+
+    set((state) => ({
+      documents: state.documents.map((d) => (d.id === id ? updated : d)),
+      currentDocument: state.currentDocument?.id === id ? updated : state.currentDocument,
+    }));
+    get().persist();
+  },
+
   selectDocument: (id: string) => {
     const doc = get().documents.find((d) => d.id === id);
     if (doc) {
@@ -121,6 +162,9 @@ export const useStore = create<AppState>((set, get) => ({
     if (!currentDocument) return;
 
     const updated = { ...currentDocument, body };
+    if (currentDocument.localFile && body !== currentDocument.body) {
+      updated.localFile = { ...currentDocument.localFile, unsaved: true };
+    }
     const updatedDocs = documents.map((d) =>
       d.id === currentDocument.id ? updated : d
     );

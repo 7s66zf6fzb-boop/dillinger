@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useStore } from "@/stores/store";
 import { EditorSkeleton } from "@/components/ui/Skeleton";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import { useDesktopFiles } from "@/hooks/useDesktopFiles";
 import { importDocumentFile } from "@/lib/import";
 
 // Dynamic import Sidebar to prevent SSR issues with GitHub/Dropbox hooks
@@ -63,6 +64,8 @@ function EditorContent() {
   const toggleShortcuts = useStore((state) => state.toggleShortcuts);
   const { notify } = useToast();
   const { upload } = useImageUpload();
+
+  useDesktopFiles(currentDocument !== null);
 
   const [isDragging, setIsDragging] = useState(false);
   const [, setDragCounter] = useState(0);
