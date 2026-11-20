@@ -3,21 +3,24 @@
 import { useEffect } from "react";
 import { useStore } from "@/stores/store";
 import { useToast } from "@/components/ui/Toast";
+import { ensureExtension } from "@/lib/document";
 import {
   FILES_OPENED_EVENT,
   isDesktopApp,
   saveLocalFile,
+  saveLocalFileAs,
   takeOpenedFiles,
 } from "@/lib/desktop";
 
 /**
- * In the desktop app: imports files opened from Finder and saves them back with Cmd/Ctrl+S.
+ * In the desktop app: imports files opened from Finder, saves them back with Cmd/Ctrl+S,
+ * and Save As (Cmd/Ctrl+Shift+S) to a location picked in the macOS save panel.
  * Pass ready=false until the store has hydrated, so opened files are not overwritten.
  */
 export function useDesktopFiles(ready: boolean): void {
   const openLocalFile = useStore((state) => state.openLocalFile);
   const markLocalFileSaved = useStore((state) => state.markLocalFileSaved);
-  const persist = useStore((state) => state.persist);
+  const linkLocalFile = useStore((state) => state.linkLocalFile);
   const { notify } = useToast();
 
   useEffect(() => {
@@ -44,21 +47,36 @@ export function useDesktopFiles(ready: boolean): void {
   useEffect(() => {
     if (!ready || !isDesktopApp()) return;
 
+    let panelOpen = false;
+
     const handleKeyDown = async (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== "s") return;
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== "s") return;
       e.preventDefault();
 
       const doc = useStore.getState().currentDocument;
       if (!doc) return;
-
-      if (!doc.localFile) {
-        persist();
-        notify("Saved in Dillinger");
-        return;
-      }
-
       const body = doc.body;
+
       try {
+        // Save As when asked, or when the document has never been saved to a file.
+        if (e.shiftKey || !doc.localFile) {
+          if (panelOpen) return;
+          panelOpen = true;
+          try {
+            const saved = await saveLocalFileAs(
+              body,
+              ensureExtension(doc.title, ".md"),
+              doc.localFile?.path
+            );
+            if (!saved) return;
+            linkLocalFile(doc.id, saved.path, saved.name, body);
+            notify(`Saved "${saved.name}"`);
+          } finally {
+            panelOpen = false;
+          }
+          return;
+        }
+
         await saveLocalFile(doc.localFile.path, body);
         markLocalFileSaved(doc.id, body);
         notify(`Saved "${doc.localFile.path.split("/").pop()}"`);
@@ -69,5 +87,5 @@ export function useDesktopFiles(ready: boolean): void {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [ready, markLocalFileSaved, persist, notify]);
+  }, [ready, markLocalFileSaved, linkLocalFile, notify]);
 }

@@ -29,6 +29,26 @@ export async function takeOpenedFiles(): Promise<OpenedFile[]> {
   return t ? t.invoke<OpenedFile[]>("take_opened_files") : [];
 }
 
+export interface SavedFile {
+  path: string;
+  name: string;
+}
+
+/** Shows the macOS save panel and writes the file. Resolves null if the user cancels. */
+export async function saveLocalFileAs(
+  content: string,
+  suggestedName: string,
+  currentPath?: string
+): Promise<SavedFile | null> {
+  const t = tauri();
+  if (!t) throw new Error("Saving to disk needs the Dillinger desktop app");
+  return t.invoke<SavedFile | null>("save_file_as", {
+    content,
+    suggestedName,
+    currentPath: currentPath ?? null,
+  });
+}
+
 export async function saveLocalFile(path: string, content: string): Promise<void> {
   const t = tauri();
   if (!t) throw new Error("Saving to disk needs the Dillinger desktop app");

@@ -12,6 +12,7 @@ use std::time::Duration;
 
 use tauri::webview::NewWindowResponse;
 use tauri::{AppHandle, Manager, RunEvent, State, Url, WebviewUrl, WebviewWindowBuilder};
+use tauri_plugin_dialog::DialogExt;
 
 const PORT: u16 = 3000; // must match NEXT_PUBLIC_BASE_URL so OAuth callbacks work
 const START_TIMEOUT_SECS: u64 = 90;
@@ -49,6 +50,56 @@ fn save_file(path: String, content: String, files: State<OpenedFiles>) -> Result
     if !files.allowed.lock().unwrap().contains(&path) {
         return Err("This document was not opened from a file in this session.".into());
     }
+    write_atomic(&path, &content)
+}
+
+/// Where Save As put the file.
+#[derive(serde::Serialize)]
+struct SavedFile {
+    path: String,
+    name: String,
+}
+
+/// Shows the macOS save panel and writes the document there. None if the user cancelled.
+/// Async so the panel does not block the main thread it runs on.
+#[tauri::command]
+async fn save_file_as(
+    app: AppHandle,
+    window: tauri::WebviewWindow,
+    content: String,
+    suggested_name: String,
+    current_path: Option<String>,
+) -> Result<Option<SavedFile>, String> {
+    let dir = current_path
+        .as_deref()
+        .and_then(|p| Path::new(p).parent().map(Path::to_path_buf))
+        .or_else(|| std::env::var("HOME").ok().map(|h| PathBuf::from(h).join("Documents")));
+    let mut dialog = app
+        .dialog()
+        .file()
+        .set_parent(&window)
+        .set_title("Save As")
+        .set_file_name(suggested_name)
+        .add_filter("Markdown", &["md", "markdown", "txt"]);
+    if let Some(dir) = dir {
+        dialog = dialog.set_directory(dir);
+    }
+    let Some(chosen) = dialog.blocking_save_file() else {
+        return Ok(None);
+    };
+    let path = chosen.into_path().map_err(|e| e.to_string())?;
+    write_atomic(&path, &content)?;
+    app.state::<OpenedFiles>().allowed.lock().unwrap().insert(path.clone());
+    Ok(Some(SavedFile {
+        name: path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default(),
+        path: path.to_string_lossy().into_owned(),
+    }))
+}
+
+fn write_atomic(path: &Path, content: &str) -> Result<(), String> {
     // Write beside the file, then rename over it, so a failed write never truncates it.
     let dir = path.parent().ok_or("Invalid file path")?;
     let name = path.file_name().ok_or("Invalid file path")?.to_string_lossy();
@@ -162,7 +213,8 @@ fn main() {
     let app = tauri::Builder::default()
         .manage(Server(Mutex::new(None)))
         .manage(OpenedFiles::default())
-        .invoke_handler(tauri::generate_handler![take_opened_files, save_file])
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![take_opened_files, save_file, save_file_as])
         .setup(|app| {
             let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
                 .title("Dillinger")

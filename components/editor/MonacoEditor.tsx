@@ -33,6 +33,22 @@ export function MonacoEditor() {
         ? "Emacs"
         : "Default";
 
+  // Monaco rejects its pending async work (hovers, suggestions) with a "Canceled" error when
+  // focus moves away, e.g. to the Save As panel. The error is expected and harmless, but the
+  // Next.js dev overlay reports it. A capture listener runs before the overlay's and drops it.
+  useEffect(() => {
+    const ignoreMonacoCancel = (event: PromiseRejectionEvent) => {
+      const reason = event.reason as { name?: unknown; message?: unknown } | null;
+      if (reason?.name === "Canceled" && reason.message === "Canceled") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    };
+    window.addEventListener("unhandledrejection", ignoreMonacoCancel, { capture: true });
+    return () =>
+      window.removeEventListener("unhandledrejection", ignoreMonacoCancel, { capture: true });
+  }, []);
+
   // Debounced persist for auto-save
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 

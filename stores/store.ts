@@ -27,6 +27,7 @@ interface AppState {
   createImportedDocument: (title: string, body: string) => void;
   openLocalFile: (path: string, name: string, body: string) => void;
   markLocalFileSaved: (id: string, savedBody: string) => void;
+  linkLocalFile: (id: string, path: string, name: string, savedBody: string) => void;
   selectDocument: (id: string) => void;
   deleteDocument: (id: string) => void;
   updateDocumentBody: (body: string) => void;
@@ -51,8 +52,16 @@ interface AppState {
   persist: () => void;
 }
 
+// Timestamp ids, bumped when several documents are created in the same millisecond
+// (for example, opening several files from Finder at once).
+let lastDocumentId = 0;
+const nextDocumentId = (): string => {
+  lastDocumentId = Math.max(Date.now(), lastDocumentId + 1);
+  return lastDocumentId.toString();
+};
+
 const createDefaultDocument = (): Document => ({
-  id: Date.now().toString(),
+  id: nextDocumentId(),
   title: DEFAULT_DOCUMENT_TITLE,
   body: DEFAULT_DOCUMENT_BODY,
   createdAt: new Date().toISOString(),
@@ -132,6 +141,31 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       documents: state.documents.map((d) => (d.id === id ? updated : d)),
       currentDocument: state.currentDocument?.id === id ? updated : state.currentDocument,
+    }));
+    get().persist();
+  },
+
+  linkLocalFile: (id: string, path: string, name: string, savedBody: string) => {
+    const doc = get().documents.find((d) => d.id === id);
+    if (!doc) return;
+
+    const updated: Document = {
+      ...doc,
+      title: name,
+      localFile: { path, unsaved: doc.body !== savedBody },
+    };
+
+    // If another document was linked to the file just overwritten, it no longer matches it.
+    const relink = (d: Document): Document => {
+      if (d.id === id) return updated;
+      if (d.localFile?.path !== path) return d;
+      const { localFile: _unlinked, ...rest } = d;
+      return rest;
+    };
+
+    set((state) => ({
+      documents: state.documents.map(relink),
+      currentDocument: state.currentDocument ? relink(state.currentDocument) : null,
     }));
     get().persist();
   },

@@ -715,4 +715,26 @@ describe("local files (desktop app)", () => {
     useStore.getState().updateDocumentBody("x");
     expect(useStore.getState().currentDocument?.localFile).toBeUndefined();
   });
+
+  it("Save As links the document to the new file and renames it", () => {
+    useStore.getState().createDocument();
+    const id = useStore.getState().currentDocument!.id;
+    useStore.getState().updateDocumentBody("# New");
+    useStore.getState().linkLocalFile(id, "/tmp/new.md", "new.md", "# New");
+    expect(useStore.getState().currentDocument).toMatchObject({
+      title: "new.md",
+      localFile: { path: "/tmp/new.md", unsaved: false },
+    });
+  });
+
+  it("Save As over a file another document has open unlinks that document", () => {
+    useStore.getState().openLocalFile("/tmp/a.md", "a.md", "# A");
+    const first = useStore.getState().currentDocument!.id;
+    useStore.getState().openLocalFile("/tmp/b.md", "b.md", "# B");
+    const second = useStore.getState().currentDocument!.id;
+    useStore.getState().linkLocalFile(second, "/tmp/a.md", "a.md", "# B");
+    const docs = useStore.getState().documents;
+    expect(docs.find((d) => d.id === first)?.localFile).toBeUndefined();
+    expect(docs.find((d) => d.id === second)?.localFile?.path).toBe("/tmp/a.md");
+  });
 });
