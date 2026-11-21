@@ -273,3 +273,26 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Printing (Cmd+P): only the rendered document in #print-root, see lib/print.ts */
+#print-root {
+  display: none;
+}
+
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body > *:not(#print-root) {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block;
+    color: #000;
+  }
+}

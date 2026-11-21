@@ -17,6 +17,7 @@ function resetStore() {
       sidebarOpen: true,
       settingsOpen: false,
       previewVisible: true,
+      editorVisible: true,
       zenMode: false,
       editorScrollPercent: 0,
       editorTopLine: 1,
@@ -272,6 +273,35 @@ describe("useStore", () => {
 
       useStore.getState().togglePreview();
 
+      expect(useStore.getState().previewVisible).toBe(true);
+    });
+
+    it("reopens the editor when hiding the preview while the editor is collapsed", () => {
+      useStore.setState({ ...useStore.getState(), editorVisible: false }, true);
+
+      useStore.getState().togglePreview();
+
+      expect(useStore.getState().previewVisible).toBe(false);
+      expect(useStore.getState().editorVisible).toBe(true);
+    });
+  });
+
+  describe("toggleEditor", () => {
+    it("collapses and expands the editor", () => {
+      useStore.getState().toggleEditor();
+      expect(useStore.getState().editorVisible).toBe(false);
+      expect(useStore.getState().previewVisible).toBe(true);
+
+      useStore.getState().toggleEditor();
+      expect(useStore.getState().editorVisible).toBe(true);
+    });
+
+    it("reopens the preview when hiding the editor while the preview is collapsed", () => {
+      useStore.setState({ ...useStore.getState(), previewVisible: false }, true);
+
+      useStore.getState().toggleEditor();
+
+      expect(useStore.getState().editorVisible).toBe(false);
       expect(useStore.getState().previewVisible).toBe(true);
     });
   });
@@ -736,5 +766,47 @@ describe("local files (desktop app)", () => {
     const docs = useStore.getState().documents;
     expect(docs.find((d) => d.id === first)?.localFile).toBeUndefined();
     expect(docs.find((d) => d.id === second)?.localFile?.path).toBe("/tmp/a.md");
+  });
+});
+
+describe("closeDocument", () => {
+  beforeEach(() => {
+    resetStore();
+    localStorage.clear();
+  });
+
+  it("removes the document and selects its neighbour", () => {
+    const docs = [
+      createTestDocument({ id: "a" }),
+      createTestDocument({ id: "b" }),
+      createTestDocument({ id: "c" }),
+    ];
+    useStore.setState({ documents: docs, currentDocument: docs[1] });
+
+    useStore.getState().closeDocument("b");
+
+    expect(useStore.getState().documents.map((d) => d.id)).toEqual(["a", "c"]);
+    expect(useStore.getState().currentDocument?.id).toBe("c");
+  });
+
+  it("keeps the current document when closing another", () => {
+    const docs = [createTestDocument({ id: "a" }), createTestDocument({ id: "b" })];
+    useStore.setState({ documents: docs, currentDocument: docs[0] });
+
+    useStore.getState().closeDocument("b");
+
+    expect(useStore.getState().currentDocument?.id).toBe("a");
+  });
+
+  it("opens a fresh document after closing the last one", () => {
+    const docs = [createTestDocument({ id: "only" })];
+    useStore.setState({ documents: docs, currentDocument: docs[0] });
+
+    useStore.getState().closeDocument("only");
+
+    const { documents, currentDocument } = useStore.getState();
+    expect(documents).toHaveLength(1);
+    expect(documents[0].id).not.toBe("only");
+    expect(currentDocument?.id).toBe(documents[0].id);
   });
 });

@@ -1,3 +1,16 @@
+import type { Document } from "@/lib/types";
+import { DEFAULT_DOCUMENT_BODY } from "@/lib/types";
+
+/**
+ * Whether closing the document would lose work: a file with edits not yet written to disk,
+ * or a document never saved to a file that holds anything beyond the starter text.
+ */
+export function hasUnsavedChanges(doc: Document): boolean {
+  if (doc.localFile) return doc.localFile.unsaved === true;
+  const body = doc.body.trim();
+  return body !== "" && body !== DEFAULT_DOCUMENT_BODY.trim();
+}
+
 const MARKDOWN_EXTENSIONS = [".md", ".markdown", ".txt"] as const;
 const HTML_EXTENSIONS = [".html", ".htm"] as const;
 

@@ -28,11 +28,44 @@ function getDownloadFilename(response: Response, fallback: string): string {
   return match?.[1] || fallback;
 }
 
+/**
+ * The coding-symbol image drawn in currentColor (as a mask), so it matches the other navbar
+ * icons and their hover color. Crossed: a slash like lucide's EyeOff, with a navbar-colored
+ * halo that cuts a gap in the glyph the way EyeOff's eye is broken around its slash.
+ */
+function CodeIcon({ crossed }: { crossed: boolean }) {
+  return (
+    <span className="relative block size-5" aria-hidden="true">
+      <span
+        className="absolute inset-0 bg-current"
+        style={{
+          WebkitMaskImage: "url(/icons/coding-symbol.png)",
+          maskImage: "url(/icons/coding-symbol.png)",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+        }}
+      />
+      {crossed && (
+        <svg viewBox="0 0 24 24" className="absolute inset-0 size-5" fill="none" strokeLinecap="round">
+          <line x1="2" y1="2" x2="22" y2="22" className="stroke-bg-navbar" strokeWidth="5" />
+          <line x1="2" y1="2" x2="22" y2="22" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      )}
+    </span>
+  );
+}
+
 export function Navbar() {
   const toggleSidebar = useStore((state) => state.toggleSidebar);
   const toggleSettings = useStore((state) => state.toggleSettings);
   const togglePreview = useStore((state) => state.togglePreview);
   const previewVisible = useStore((state) => state.previewVisible);
+  const editorVisible = useStore((state) => state.editorVisible);
+  const toggleEditor = useStore((state) => state.toggleEditor);
   const currentDocument = useStore((state) => state.currentDocument);
   const createImportedDocument = useStore((state) => state.createImportedDocument);
   const insertMarkdownAtCursor = useStore((state) => state.insertMarkdownAtCursor);
@@ -267,12 +300,26 @@ export function Navbar() {
           )}
         </div>
 
+        {/* Editor toggle */}
+        <button
+          onClick={toggleEditor}
+          aria-label={editorVisible ? "Hide editor" : "Show editor"}
+          title={editorVisible ? "Hide editor" : "Show editor"}
+          aria-pressed={editorVisible}
+          aria-controls="editor-pane"
+          className="text-text-invert hover:text-plum transition-all active:scale-[0.97] p-2 rounded
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum focus-visible:ring-offset-2 focus-visible:ring-offset-bg-navbar"
+        >
+          <CodeIcon crossed={!editorVisible} />
+        </button>
+
         {/* Preview toggle */}
         <button
           onClick={togglePreview}
           aria-label={previewVisible ? "Hide preview" : "Show preview"}
           title={previewVisible ? "Hide preview" : "Show preview"}
           aria-pressed={previewVisible}
+          aria-controls="preview-pane"
           className="text-text-invert hover:text-plum transition-all active:scale-[0.97] p-2 rounded
                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum focus-visible:ring-offset-2 focus-visible:ring-offset-bg-navbar"
         >

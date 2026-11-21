@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "editor",
-  "description": "Lets the local editor page read files opened from Finder, save them back, and save to a new location.",
+  "description": "Lets the local editor page read files opened from Finder, save them (in place or to a new location), and open the print dialog.",
   "windows": [
     "main"
   ],
@@ -13,6 +13,7 @@
   "permissions": [
     "allow-take-opened-files",
     "allow-save-file",
-    "allow-save-file-as"
+    "allow-save-file-as",
+    "allow-print-page"
   ]
 }

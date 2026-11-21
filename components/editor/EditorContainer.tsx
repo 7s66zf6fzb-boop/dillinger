@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, memo } from "react";
+import { useEffect, useState, useCallback, useRef, memo } from "react";
 import dynamic from "next/dynamic";
 import { X, Upload } from "lucide-react";
 import { Navbar } from "@/components/navbar/Navbar";
@@ -15,7 +15,9 @@ import { useStore } from "@/stores/store";
 import { EditorSkeleton } from "@/components/ui/Skeleton";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useDesktopFiles } from "@/hooks/useDesktopFiles";
+import { usePrintShortcut } from "@/hooks/usePrintShortcut";
 import { importDocumentFile } from "@/lib/import";
+import { cn } from "@/lib/utils";
 
 // Dynamic import Sidebar to prevent SSR issues with GitHub/Dropbox hooks
 const Sidebar = dynamic(
@@ -52,8 +54,40 @@ const DropZoneOverlay = memo(function DropZoneOverlay({
   );
 });
 
+const WIDE_QUERY = "(min-width: 640px)"; // Tailwind's sm breakpoint
+
+function useIsWide(): boolean {
+  const [isWide, setIsWide] = useState(true);
+  useEffect(() => {
+    const query = window.matchMedia(WIDE_QUERY);
+    const update = () => setIsWide(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  return isWide;
+}
+
+function useLastNonZero(value: number, initial: number): number {
+  const last = useRef(value || initial);
+  if (value > 0) last.current = value;
+  return last.current;
+}
+
+/** True when the latest width change opened or closed the pane (to or from zero). */
+function useIsSliding(width: number): boolean {
+  const previous = useRef(width);
+  const sliding = useRef(false);
+  if (width !== previous.current) {
+    sliding.current = width === 0 || previous.current === 0;
+    previous.current = width;
+  }
+  return sliding.current;
+}
+
 function EditorContent() {
   const previewVisible = useStore((state) => state.previewVisible);
+  const editorVisible = useStore((state) => state.editorVisible);
   const currentDocument = useStore((state) => state.currentDocument);
   const createImportedDocument = useStore((state) => state.createImportedDocument);
   const insertMarkdownAtCursor = useStore((state) => state.insertMarkdownAtCursor);
@@ -66,6 +100,19 @@ function EditorContent() {
   const { upload } = useImageUpload();
 
   useDesktopFiles(currentDocument !== null);
+  usePrintShortcut();
+
+  // Pane widths, as a percentage of the pane row. Below the sm breakpoint only one pane fits.
+  const isWide = useIsWide();
+  const editorWidth = editorVisible ? (previewVisible && isWide ? 50 : 100) : 0;
+  const previewWidth = previewVisible ? (editorVisible ? (isWide ? 50 : 0) : 100) : 0;
+  // While a pane slides shut its content keeps the width it had open, so it moves out
+  // rather than squashing.
+  const editorOpenWidth = useLastNonZero(editorWidth, 50);
+  // The editor pins to its right edge only while sliding in or out; when it just widens
+  // (the preview closing) it pins left, so its text stays in place instead of being clipped.
+  const editorSliding = useIsSliding(editorWidth);
+  const previewOpenWidth = useLastNonZero(previewWidth, 50);
 
   const [isDragging, setIsDragging] = useState(false);
   const [, setDragCounter] = useState(0);
@@ -223,23 +270,50 @@ function EditorContent() {
         <Navbar />
         <DocumentTitle />
 
-        {/* Editor + Preview */}
-        <div className="flex-1 flex min-h-0">
-          {/* Editor Panel */}
+        {/* Editor + Preview. Both stay mounted; a closing pane slides toward its own edge
+            (editor left, preview right) while the other grows into the space. */}
+        <div className="flex-1 flex min-h-0 overflow-hidden [container-type:inline-size]">
           <div
-            className={`${
-              previewVisible ? "w-full sm:w-1/2 shadow-none sm:shadow-[1px_0_0_0_#E8E8E8]" : "w-full"
-            } border-r border-border-light`}
+            id="editor-pane"
+            aria-hidden={editorWidth === 0}
+            inert={editorWidth === 0 ? true : undefined}
+            className={cn(
+              "relative shrink-0 overflow-hidden",
+              editorWidth === 0 && "invisible",
+              // visibility switches at the end of the slide when closing, at the start when opening
+              "transition-[width,visibility] duration-300 ease-in-out motion-reduce:transition-none",
+              editorWidth > 0 && previewWidth > 0 && "border-r border-border-light"
+            )}
+            style={{ width: `${editorWidth}%` }}
           >
-            <MonacoEditor />
+            {/* Pinned right while sliding, so shrinking the pane carries it off to the left */}
+            <div
+              className={cn("absolute inset-y-0", editorSliding ? "right-0" : "left-0")}
+              style={{ width: `${editorOpenWidth}cqw` }}
+            >
+              <MonacoEditor />
+            </div>
           </div>
 
-          {/* Preview Panel */}
-          {previewVisible && (
-            <div className="hidden sm:block w-1/2 bg-[#FAFBFC]">
+          <div
+            id="preview-pane"
+            aria-hidden={previewWidth === 0}
+            inert={previewWidth === 0 ? true : undefined}
+            className={cn(
+              "relative shrink-0 overflow-hidden bg-[#FAFBFC]",
+              previewWidth === 0 && "invisible",
+              "transition-[width] duration-300 ease-in-out motion-reduce:transition-none"
+            )}
+            style={{ width: `${previewWidth}%` }}
+          >
+            {/* Anchored to the left edge, so shrinking the pane carries it off to the right */}
+            <div
+              className="absolute inset-y-0 left-0"
+              style={{ width: `${previewOpenWidth}cqw` }}
+            >
               <MarkdownPreview />
             </div>
-          )}
+          </div>
         </div>
         <LogoBar />
       </main>

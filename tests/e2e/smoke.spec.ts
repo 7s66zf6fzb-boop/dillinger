@@ -39,7 +39,7 @@ test("loads the editor shell and core controls", async ({ page }) => {
   await expect(page.getByTestId("character-count")).toContainText("74 characters");
 
   await page.getByRole("button", { name: "Hide preview" }).click();
-  await expect(page.locator("#preview")).toHaveCount(0);
+  await expect(page.locator("#preview")).toBeHidden();
   await expect(page.getByRole("button", { name: "Show preview" })).toBeVisible();
 
   await page.getByRole("button", { name: "Open settings" }).click();

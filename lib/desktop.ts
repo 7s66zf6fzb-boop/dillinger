@@ -49,6 +49,13 @@ export async function saveLocalFileAs(
   });
 }
 
+/** Opens the macOS print dialog for the page (WKWebView does not act on window.print()). */
+export async function printPage(): Promise<void> {
+  const t = tauri();
+  if (!t) throw new Error("Native printing needs the Dillinger desktop app");
+  await t.invoke("print_page");
+}
+
 export async function saveLocalFile(path: string, content: string): Promise<void> {
   const t = tauri();
   if (!t) throw new Error("Saving to disk needs the Dillinger desktop app");

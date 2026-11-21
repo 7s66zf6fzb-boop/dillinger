@@ -99,6 +99,12 @@ async fn save_file_as(
     }))
 }
 
+/// Opens the macOS print dialog for the page; its print stylesheet limits it to the document.
+#[tauri::command]
+fn print_page(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.print().map_err(|e| e.to_string())
+}
+
 fn write_atomic(path: &Path, content: &str) -> Result<(), String> {
     // Write beside the file, then rename over it, so a failed write never truncates it.
     let dir = path.parent().ok_or("Invalid file path")?;
@@ -214,7 +220,12 @@ fn main() {
         .manage(Server(Mutex::new(None)))
         .manage(OpenedFiles::default())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![take_opened_files, save_file, save_file_as])
+        .invoke_handler(tauri::generate_handler![
+            take_opened_files,
+            save_file,
+            save_file_as,
+            print_page
+        ])
         .setup(|app| {
             let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
                 .title("Dillinger")

@@ -9,6 +9,7 @@ import { useGoogleDrive } from "@/hooks/useGoogleDrive";
 import { useOneDrive } from "@/hooks/useOneDrive";
 import { useBitbucket } from "@/hooks/useBitbucket";
 import { DocumentList } from "./DocumentList";
+import { AboutPanel } from "./AboutPanel";
 import { GitHubModal } from "@/components/modals/GitHubModal";
 import { DropboxModal } from "@/components/modals/DropboxModal";
 import { GoogleDriveModal } from "@/components/modals/GoogleDriveModal";
@@ -29,6 +30,7 @@ import {
   CloudDownload,
   CloudUpload,
   FileText,
+  Info,
 } from "lucide-react";
 
 type ModalMode = "import" | "save";
@@ -39,12 +41,13 @@ interface SidebarUIState {
   importOpen: boolean;
   saveOpen: boolean;
   documentsOpen: boolean;
+  aboutOpen: boolean;
   activeModal: { target: ModalTarget; mode: ModalMode } | null;
   deleteModalOpen: boolean;
 }
 
 type SidebarAction =
-  | { type: "toggle"; section: "servicesOpen" | "importOpen" | "saveOpen" | "documentsOpen" }
+  | { type: "toggle"; section: "servicesOpen" | "importOpen" | "saveOpen" | "documentsOpen" | "aboutOpen" }
   | { type: "openModal"; target: ModalTarget; mode: ModalMode }
   | { type: "closeModal" }
   | { type: "openDeleteModal" }
@@ -55,6 +58,7 @@ const initialUIState: SidebarUIState = {
   importOpen: false,
   saveOpen: false,
   documentsOpen: true,
+  aboutOpen: false,
   activeModal: null,
   deleteModalOpen: false,
 };
@@ -164,6 +168,16 @@ export function Sidebar() {
             onToggle={() => dispatch({ type: "toggle", section: "documentsOpen" })}
           >
             <DocumentList />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            label="About"
+            panelId="about-panel"
+            icon={<Info size={14} />}
+            isOpen={ui.aboutOpen}
+            onToggle={() => dispatch({ type: "toggle", section: "aboutOpen" })}
+          >
+            <AboutPanel />
           </CollapsibleSection>
         </nav>
 

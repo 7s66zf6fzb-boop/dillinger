@@ -6,6 +6,10 @@ import type * as Monaco from "monaco-editor";
 import { useStore } from "@/stores/store";
 import { countDocumentStats } from "@/lib/document";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import { useSaveDocument } from "@/hooks/useSaveDocument";
+import { isDesktopApp } from "@/lib/desktop";
+
+const AUTOSAVE_IDLE_MS = 1000;
 
 export function MonacoEditor() {
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -25,6 +29,7 @@ export function MonacoEditor() {
   const setEditorTopLine = useStore((state) => state.setEditorTopLine);
   const setEditorInstance = useStore((state) => state.setEditorInstance);
   const { uploadFromClipboard } = useImageUpload();
+  const saveDocument = useSaveDocument();
 
   const keybindingLabel =
     keybindings === "vim"
@@ -49,7 +54,7 @@ export function MonacoEditor() {
       window.removeEventListener("unhandledrejection", ignoreMonacoCancel, { capture: true });
   }, []);
 
-  // Debounced persist for auto-save
+  // Auto-save: runs once typing pauses for AUTOSAVE_IDLE_MS
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMount: OnMount = (editor, monaco) => {
@@ -194,17 +199,22 @@ export function MonacoEditor() {
 
       updateDocumentBody(value);
 
-      // Debounced auto-save
+      // Auto-save once typing pauses: into Dillinger's storage, and, for a document opened
+      // from a file in the desktop app, back to that file. Never opens a save panel.
       if (enableAutoSave) {
         if (debounceRef.current) {
           clearTimeout(debounceRef.current);
         }
         debounceRef.current = setTimeout(() => {
           persist();
-        }, 2000);
+          const doc = useStore.getState().currentDocument;
+          if (doc?.localFile?.unsaved && isDesktopApp()) {
+            saveDocument(doc.id, { quiet: true });
+          }
+        }, AUTOSAVE_IDLE_MS);
       }
     },
-    [updateDocumentBody, persist, enableAutoSave]
+    [updateDocumentBody, persist, enableAutoSave, saveDocument]
   );
 
   const editorOptions = useMemo(

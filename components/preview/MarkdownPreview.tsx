@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useStore } from "@/stores/store";
-import { renderMarkdown } from "@/lib/markdown";
+import { renderSanitizedHtml } from "@/lib/preview-html";
 
 export function MarkdownPreview() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -22,18 +22,9 @@ export function MarkdownPreview() {
 
     let cancelled = false;
 
-    Promise.all([renderMarkdown(body), import("dompurify")]).then(
-      ([rawHtml, DOMPurify]) => {
-        if (cancelled) return;
-
-        const clean = DOMPurify.default.sanitize(rawHtml, {
-          USE_PROFILES: { html: true, mathMl: true, svg: true },
-          ADD_ATTR: ["target", "class", "data-line-start", "data-line-end"],
-          FORBID_TAGS: ["script", "style"],
-        });
-        setSanitizedHtml(clean);
-      }
-    );
+    renderSanitizedHtml(body).then((clean) => {
+      if (!cancelled) setSanitizedHtml(clean);
+    });
 
     return () => {
       cancelled = true;

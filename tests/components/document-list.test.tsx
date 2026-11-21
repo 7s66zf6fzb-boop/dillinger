@@ -2,9 +2,18 @@ import React from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DocumentList } from "@/components/sidebar/DocumentList";
+import { DocumentList as DocumentListInner } from "@/components/sidebar/DocumentList";
+import { ToastProvider } from "@/components/ui/Toast";
 import { useStore } from "@/stores/store";
-import { Document } from "@/lib/types";
+import { Document, DEFAULT_DOCUMENT_BODY } from "@/lib/types";
+
+function DocumentList() {
+  return (
+    <ToastProvider>
+      <DocumentListInner />
+    </ToastProvider>
+  );
+}
 
 const initialState = useStore.getState();
 
@@ -62,7 +71,7 @@ describe("DocumentList", () => {
     useStore.setState({ documents: docs, currentDocument: docs[0] });
     render(<DocumentList />);
 
-    const button = screen.getByRole("button", { name: /README\.md/ });
+    const button = screen.getByRole("button", { name: /^README\.md$/ });
     expect(button).toBeVisible();
   });
 
@@ -75,8 +84,8 @@ describe("DocumentList", () => {
     useStore.setState({ documents: docs, currentDocument: docs[0] });
     render(<DocumentList />);
 
-    const selectedButton = screen.getByRole("button", { name: /Selected\.md/ });
-    const otherButton = screen.getByRole("button", { name: /Other\.md/ });
+    const selectedButton = screen.getByRole("button", { name: /^Selected\.md$/ });
+    const otherButton = screen.getByRole("button", { name: /^Other\.md$/ });
 
     expect(selectedButton.className).toContain("bg-bg-highlight");
     expect(selectedButton.className).toContain("text-text-invert");
@@ -94,7 +103,7 @@ describe("DocumentList", () => {
     useStore.setState({ documents: docs, currentDocument: docs[0] });
     render(<DocumentList />);
 
-    await user.click(screen.getByRole("button", { name: /Second\.md/ }));
+    await user.click(screen.getByRole("button", { name: /^Second\.md$/ }));
 
     expect(useStore.getState().currentDocument?.id).toBe("2");
   });
@@ -104,5 +113,58 @@ describe("DocumentList", () => {
 
     const buttons = screen.queryAllByRole("button");
     expect(buttons).toHaveLength(0);
+  });
+
+  it("closes a document without unsaved changes straight away", async () => {
+    const user = userEvent.setup();
+    const docs = [
+      createDocument({ id: "1", title: "Clean.md", localFile: { path: "/tmp/clean.md" } }),
+      createDocument({ id: "2", title: "Other.md", body: DEFAULT_DOCUMENT_BODY }),
+    ];
+    useStore.setState({ documents: docs, currentDocument: docs[0] });
+    render(<DocumentList />);
+
+    const close = screen.getByRole("button", { name: "Close Clean.md" });
+    expect(close.className).not.toContain("text-red-300");
+    await user.click(close);
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(useStore.getState().documents.map((d) => d.id)).toEqual(["2"]);
+    expect(useStore.getState().currentDocument?.id).toBe("2");
+  });
+
+  it("asks before closing a document with unsaved changes, and Cancel keeps it", async () => {
+    const user = userEvent.setup();
+    const docs = [
+      createDocument({ id: "1", title: "Dirty.md", localFile: { path: "/tmp/d.md", unsaved: true } }),
+    ];
+    useStore.setState({ documents: docs, currentDocument: docs[0] });
+    render(<DocumentList />);
+
+    const close = screen.getByRole("button", { name: "Close Dirty.md (unsaved changes)" });
+    expect(close.className).toContain("text-red-300");
+    await user.click(close);
+
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("Dirty.md");
+    expect(screen.getByRole("button", { name: "Save Changes" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(useStore.getState().documents).toHaveLength(1);
+  });
+
+  it("Close without saving removes the document", async () => {
+    const user = userEvent.setup();
+    const docs = [
+      createDocument({ id: "1", title: "Dirty.md", localFile: { path: "/tmp/d.md", unsaved: true } }),
+      createDocument({ id: "2", title: "Keep.md" }),
+    ];
+    useStore.setState({ documents: docs, currentDocument: docs[0] });
+    render(<DocumentList />);
+
+    await user.click(screen.getByRole("button", { name: "Close Dirty.md (unsaved changes)" }));
+    await user.click(screen.getByRole("button", { name: "Close without saving" }));
+
+    expect(useStore.getState().documents.map((d) => d.id)).toEqual(["2"]);
   });
 });

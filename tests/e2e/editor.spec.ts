@@ -66,7 +66,7 @@ test.describe("Document creation", () => {
 
     // Verify only the seeded document exists
     await expect(
-      page.getByRole("button", { name: /Editor Test\.md/ })
+      page.getByRole("button", { name: "Editor Test.md", exact: true })
     ).toBeVisible();
 
     // Click "New Document"
@@ -79,10 +79,10 @@ test.describe("Document creation", () => {
 
     // Both documents should appear in the sidebar document list
     await expect(
-      page.getByRole("button", { name: /Editor Test\.md/ })
+      page.getByRole("button", { name: "Editor Test.md", exact: true })
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Untitled Document\.md/ })
+      page.getByRole("button", { name: "Untitled Document.md", exact: true })
     ).toBeVisible();
   });
 });
@@ -157,7 +157,7 @@ test.describe("Document switching", () => {
 
     // Open sidebar and click the second document
     await page.getByRole("button", { name: "Toggle sidebar" }).click();
-    await page.getByRole("button", { name: /Second Document\.md/ }).click();
+    await page.getByRole("button", { name: "Second Document.md", exact: true }).click();
 
     // Title and preview should update
     await expect(
@@ -166,7 +166,7 @@ test.describe("Document switching", () => {
     await expect(page.locator("#preview h1")).toHaveText("Second");
 
     // Switch back to the first document
-    await page.getByRole("button", { name: /Editor Test\.md/ }).click();
+    await page.getByRole("button", { name: "Editor Test.md", exact: true }).click();
 
     await expect(
       page.getByRole("heading", { level: 2, name: "Editor Test.md" })
@@ -188,10 +188,10 @@ test.describe("Document deletion", () => {
 
     // Both documents should be visible
     await expect(
-      page.getByRole("button", { name: /Editor Test\.md/ })
+      page.getByRole("button", { name: "Editor Test.md", exact: true })
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Second Document\.md/ })
+      page.getByRole("button", { name: "Second Document.md", exact: true })
     ).toBeVisible();
 
     // Click delete — should open the confirmation modal
@@ -205,7 +205,7 @@ test.describe("Document deletion", () => {
 
     // The deleted document should no longer appear in the sidebar
     await expect(
-      page.getByRole("button", { name: /Editor Test\.md/ })
+      page.getByRole("button", { name: "Editor Test.md", exact: true })
     ).toHaveCount(0);
 
     // The remaining document should become active
@@ -225,10 +225,10 @@ test.describe("Document deletion", () => {
 
     // Both documents should still be present
     await expect(
-      page.getByRole("button", { name: /Editor Test\.md/ })
+      page.getByRole("button", { name: "Editor Test.md", exact: true })
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Second Document\.md/ })
+      page.getByRole("button", { name: "Second Document.md", exact: true })
     ).toBeVisible();
   });
 });
@@ -245,9 +245,9 @@ test.describe("Preview toggle", () => {
     await expect(page.locator("#preview")).toBeVisible();
     await expect(page.locator("#preview h1")).toHaveText("Hello World", { timeout: 10_000 });
 
-    // Hide preview
+    // Hide preview (it stays mounted, slid out of view, so it can slide back)
     await page.getByRole("button", { name: "Hide preview" }).click();
-    await expect(page.locator("#preview")).toHaveCount(0);
+    await expect(page.locator("#preview")).toBeHidden();
     await expect(
       page.getByRole("button", { name: "Show preview" })
     ).toBeVisible();
@@ -533,7 +533,7 @@ test.describe("Sidebar toggle", () => {
 
     // The Documents section should be expanded by default
     await expect(
-      page.getByRole("button", { name: /Editor Test\.md/ })
+      page.getByRole("button", { name: "Editor Test.md", exact: true })
     ).toBeVisible();
   });
 });

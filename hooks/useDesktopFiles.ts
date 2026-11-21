@@ -3,14 +3,8 @@
 import { useEffect } from "react";
 import { useStore } from "@/stores/store";
 import { useToast } from "@/components/ui/Toast";
-import { ensureExtension } from "@/lib/document";
-import {
-  FILES_OPENED_EVENT,
-  isDesktopApp,
-  saveLocalFile,
-  saveLocalFileAs,
-  takeOpenedFiles,
-} from "@/lib/desktop";
+import { useSaveDocument } from "@/hooks/useSaveDocument";
+import { FILES_OPENED_EVENT, isDesktopApp, takeOpenedFiles } from "@/lib/desktop";
 
 /**
  * In the desktop app: imports files opened from Finder, saves them back with Cmd/Ctrl+S,
@@ -19,8 +13,7 @@ import {
  */
 export function useDesktopFiles(ready: boolean): void {
   const openLocalFile = useStore((state) => state.openLocalFile);
-  const markLocalFileSaved = useStore((state) => state.markLocalFileSaved);
-  const linkLocalFile = useStore((state) => state.linkLocalFile);
+  const saveDocument = useSaveDocument();
   const { notify } = useToast();
 
   useEffect(() => {
@@ -47,45 +40,16 @@ export function useDesktopFiles(ready: boolean): void {
   useEffect(() => {
     if (!ready || !isDesktopApp()) return;
 
-    let panelOpen = false;
-
-    const handleKeyDown = async (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== "s") return;
       e.preventDefault();
 
       const doc = useStore.getState().currentDocument;
-      if (!doc) return;
-      const body = doc.body;
-
-      try {
-        // Save As when asked, or when the document has never been saved to a file.
-        if (e.shiftKey || !doc.localFile) {
-          if (panelOpen) return;
-          panelOpen = true;
-          try {
-            const saved = await saveLocalFileAs(
-              body,
-              ensureExtension(doc.title, ".md"),
-              doc.localFile?.path
-            );
-            if (!saved) return;
-            linkLocalFile(doc.id, saved.path, saved.name, body);
-            notify(`Saved "${saved.name}"`);
-          } finally {
-            panelOpen = false;
-          }
-          return;
-        }
-
-        await saveLocalFile(doc.localFile.path, body);
-        markLocalFileSaved(doc.id, body);
-        notify(`Saved "${doc.localFile.path.split("/").pop()}"`);
-      } catch (error) {
-        notify(error instanceof Error ? error.message : String(error));
-      }
+      // Save As when asked, or when the document has never been saved to a file.
+      if (doc) saveDocument(doc.id, { saveAs: e.shiftKey });
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [ready, markLocalFileSaved, linkLocalFile, notify]);
+  }, [ready, saveDocument]);
 }

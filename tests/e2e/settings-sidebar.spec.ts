@@ -209,8 +209,8 @@ test.describe("Sidebar", () => {
   test("document list shows all documents", async ({ page }) => {
     await page.getByRole("button", { name: "Toggle sidebar" }).click();
 
-    await expect(page.getByRole("button", { name: /Alpha\.md/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Beta\.md/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Alpha.md", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Beta.md", exact: true })).toBeVisible();
   });
 
   test("creates new document from sidebar", async ({ page }) => {
@@ -218,14 +218,14 @@ test.describe("Sidebar", () => {
 
     await page.getByRole("button", { name: "New Document" }).click();
 
-    const documentButtons = page.locator("aside ul button");
+    const documentButtons = page.locator("aside ul li > button:first-child");
     await expect(documentButtons).toHaveCount(3);
   });
 
   test("selects document from list", async ({ page }) => {
     await page.getByRole("button", { name: "Toggle sidebar" }).click();
 
-    await page.getByRole("button", { name: /Beta\.md/ }).click();
+    await page.getByRole("button", { name: "Beta.md", exact: true }).click();
 
     await expect(
       page.getByRole("heading", { level: 2, name: "Beta.md" })
@@ -235,8 +235,8 @@ test.describe("Sidebar", () => {
   test("deletes document from sidebar with confirmation", async ({ page }) => {
     await page.getByRole("button", { name: "Toggle sidebar" }).click();
 
-    await expect(page.getByRole("button", { name: /Alpha\.md/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Beta\.md/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Alpha.md", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Beta.md", exact: true })).toBeVisible();
 
     await page.getByRole("button", { name: "Delete Document" }).click();
 
@@ -248,9 +248,9 @@ test.describe("Sidebar", () => {
 
     await expect(deleteDialog).toHaveCount(0);
 
-    const documentButtons = page.locator("aside ul button");
+    const documentButtons = page.locator("aside ul li > button:first-child");
     await expect(documentButtons).toHaveCount(1);
-    await expect(page.getByRole("button", { name: /Beta\.md/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Beta.md", exact: true })).toBeVisible();
   });
 
   test("cancels delete confirmation", async ({ page }) => {
@@ -264,8 +264,8 @@ test.describe("Sidebar", () => {
     await page.getByRole("button", { name: "Cancel" }).click();
 
     await expect(deleteDialog).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /Alpha\.md/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Beta\.md/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Alpha.md", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Beta.md", exact: true })).toBeVisible();
   });
 
   test("closes on menu click", async ({ page }) => {

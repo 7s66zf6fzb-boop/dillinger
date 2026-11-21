@@ -14,6 +14,7 @@ const SHORTCUT_GROUPS = [
     shortcuts: [
       { keys: ["⌘", "S"], action: "Save to file (desktop app)" },
       { keys: ["⌘", "⇧", "S"], action: "Save As… (desktop app)" },
+      { keys: ["⌘", "P"], action: "Print / Save as PDF" },
       { keys: ["⌘", "Z"], action: "Undo" },
       { keys: ["⌘", "⇧", "Z"], action: "Redo" },
       { keys: ["⌘", "X"], action: "Cut line" },

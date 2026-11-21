@@ -49,9 +49,9 @@ test("imports markdown/html files, preserves prior documents, inserts images, an
   ).toBeVisible();
   await expect(page.locator("#preview h1")).toHaveText("Imported");
   await expect(
-    page.getByRole("button", { name: /Playwright Smoke\.md/ })
+    page.getByRole("button", { name: "Playwright Smoke.md", exact: true })
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: /Imported\.md/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Imported.md", exact: true })).toBeVisible();
 
   await page.getByTestId("document-import-input").setInputFiles({
     name: "Imported.html",
@@ -63,7 +63,7 @@ test("imports markdown/html files, preserves prior documents, inserts images, an
     page.getByRole("heading", { level: 2, name: "Imported.html" })
   ).toBeVisible();
   await expect(page.locator("#preview h1")).toHaveText("HTML Imported");
-  await expect(page.getByRole("button", { name: /Imported\.html/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Imported.html", exact: true })).toBeVisible();
 
   await page.getByTestId("image-import-input").setInputFiles({
     name: "pixel.png",

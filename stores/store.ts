@@ -17,6 +17,7 @@ interface AppState {
   settingsOpen: boolean;
   shortcutsOpen: boolean;
   previewVisible: boolean;
+  editorVisible: boolean;
   zenMode: boolean;
   isDirty: boolean;
   editorScrollPercent: number;
@@ -30,6 +31,7 @@ interface AppState {
   linkLocalFile: (id: string, path: string, name: string, savedBody: string) => void;
   selectDocument: (id: string) => void;
   deleteDocument: (id: string) => void;
+  closeDocument: (id: string) => void;
   updateDocumentBody: (body: string) => void;
   updateDocumentTitle: (title: string) => void;
   setEditorInstance: (editor: Monaco.editor.IStandaloneCodeEditor | null) => void;
@@ -43,6 +45,7 @@ interface AppState {
   toggleSettings: () => void;
   toggleShortcuts: () => void;
   togglePreview: () => void;
+  toggleEditor: () => void;
   setZenMode: (enabled: boolean) => void;
   setEditorScrollPercent: (percent: number) => void;
   setEditorTopLine: (line: number) => void;
@@ -77,6 +80,7 @@ export const useStore = create<AppState>((set, get) => ({
   settingsOpen: false,
   shortcutsOpen: false,
   previewVisible: true,
+  editorVisible: true,
   zenMode: false,
   isDirty: false,
   editorScrollPercent: 0,
@@ -191,6 +195,25 @@ export const useStore = create<AppState>((set, get) => ({
     get().persist();
   },
 
+  // Removes the document from the list (a file on disk is left alone). Closing the last one
+  // opens a fresh document, since the editor always shows one.
+  closeDocument: (id: string) => {
+    const { documents, currentDocument } = get();
+    const index = documents.findIndex((d) => d.id === id);
+    if (index === -1) return;
+
+    let remaining = documents.filter((d) => d.id !== id);
+    if (remaining.length === 0) remaining = [createDefaultDocument()];
+
+    const nextCurrent =
+      currentDocument?.id === id
+        ? remaining[Math.min(index, remaining.length - 1)]
+        : currentDocument;
+
+    set({ documents: remaining, currentDocument: nextCurrent });
+    get().persist();
+  },
+
   updateDocumentBody: (body: string) => {
     const { currentDocument, documents } = get();
     if (!currentDocument) return;
@@ -262,7 +285,19 @@ export const useStore = create<AppState>((set, get) => ({
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   toggleSettings: () => set((state) => ({ settingsOpen: !state.settingsOpen })),
   toggleShortcuts: () => set((state) => ({ shortcutsOpen: !state.shortcutsOpen })),
-  togglePreview: () => set((state) => ({ previewVisible: !state.previewVisible })),
+  // At least one pane stays open: collapsing the only open pane reopens the other.
+  togglePreview: () =>
+    set((state) =>
+      state.previewVisible
+        ? { previewVisible: false, editorVisible: true }
+        : { previewVisible: true }
+    ),
+  toggleEditor: () =>
+    set((state) =>
+      state.editorVisible
+        ? { editorVisible: false, previewVisible: true }
+        : { editorVisible: true }
+    ),
   setZenMode: (enabled) => set({ zenMode: enabled }),
   setEditorScrollPercent: (percent) => set({ editorScrollPercent: percent }),
   setEditorTopLine: (line) => set({ editorTopLine: line }),
