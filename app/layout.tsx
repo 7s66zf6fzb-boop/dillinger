@@ -64,7 +64,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    // NightModeScript may add class="dark" before React hydrates.
+    <html lang="en" suppressHydrationWarning>
       <body className={`${sourceSans.variable} font-sans`}>
         <Providers>
           {children}

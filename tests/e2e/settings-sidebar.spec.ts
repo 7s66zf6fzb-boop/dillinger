@@ -275,7 +275,9 @@ test.describe("Sidebar", () => {
     await expect(page.locator("aside")).toBeVisible();
 
     await toggleButton.click();
-    await expect(page.locator("aside")).toHaveCount(0);
+    // Closed: still in the page for the slide, but out of the accessibility tree and focus order
+    await expect(page.getByRole("complementary")).toHaveCount(0);
+    await expect(page.locator("aside")).toHaveAttribute("inert", "");
   });
 
   test("Services section is collapsed by default", async ({ page }) => {
@@ -285,7 +287,8 @@ test.describe("Sidebar", () => {
     await expect(servicesButton).toBeVisible();
     await expect(servicesButton).toHaveAttribute("aria-expanded", "false");
 
-    await expect(page.locator("#services-panel")).toHaveCount(0);
+    // Collapsed: kept for the height animation, but its hidden buttons cannot take focus
+    await expect(page.locator("#services-panel")).toHaveAttribute("inert", "");
   });
 
   test("expanding Services section shows cloud provider buttons", async ({ page }) => {

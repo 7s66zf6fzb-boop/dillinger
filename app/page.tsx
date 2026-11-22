@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import nextDynamic from "next/dynamic";
 import { EditorSkeleton } from "@/components/ui/Skeleton";
 import { HOMEPAGE_FAQS } from "@/lib/homepage-content";
+import { NightModeScript } from "@/components/ui/NightModeScript";
 
 export const metadata: Metadata = {
   title: "Markdown Editor — Online, Free, with Live Preview | Dillinger",
@@ -47,6 +48,7 @@ const FAQ_JSON_LD = {
 export default function Page() {
   return (
     <>
+      <NightModeScript />
       <Editor />
       <script
         type="application/ld+json"

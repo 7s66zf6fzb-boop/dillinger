@@ -19,6 +19,8 @@ interface AppState {
   previewVisible: boolean;
   editorVisible: boolean;
   zenMode: boolean;
+  /** Saved documents and settings have been loaded from storage. */
+  hydrated: boolean;
   isDirty: boolean;
   editorScrollPercent: number;
   editorTopLine: number;
@@ -63,11 +65,17 @@ const nextDocumentId = (): string => {
   return lastDocumentId.toString();
 };
 
-const createDefaultDocument = (): Document => ({
+const createBlankDocument = (): Document => ({
   id: nextDocumentId(),
   title: DEFAULT_DOCUMENT_TITLE,
-  body: DEFAULT_DOCUMENT_BODY,
+  body: "",
   createdAt: new Date().toISOString(),
+});
+
+// The formatting guide is shown only to first-time visitors; every other new document starts blank.
+const createWelcomeDocument = (): Document => ({
+  ...createBlankDocument(),
+  body: DEFAULT_DOCUMENT_BODY,
 });
 
 export const useStore = create<AppState>((set, get) => ({
@@ -82,13 +90,14 @@ export const useStore = create<AppState>((set, get) => ({
   previewVisible: true,
   editorVisible: true,
   zenMode: false,
+  hydrated: false,
   isDirty: false,
   editorScrollPercent: 0,
   editorTopLine: 1,
 
   // Document Actions
   createDocument: () => {
-    const newDoc = createDefaultDocument();
+    const newDoc = createBlankDocument();
     set((state) => ({
       documents: [...state.documents, newDoc],
       currentDocument: newDoc,
@@ -98,7 +107,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   createImportedDocument: (title: string, body: string) => {
     const newDoc = {
-      ...createDefaultDocument(),
+      ...createBlankDocument(),
       title,
       body,
     };
@@ -120,7 +129,7 @@ export const useStore = create<AppState>((set, get) => ({
     } else if (existing) {
       doc = { ...existing, body, localFile: { path } };
     } else {
-      doc = { ...createDefaultDocument(), title: name, body, localFile: { path } };
+      doc = { ...createBlankDocument(), title: name, body, localFile: { path } };
     }
 
     set((state) => ({
@@ -203,7 +212,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (index === -1) return;
 
     let remaining = documents.filter((d) => d.id !== id);
-    if (remaining.length === 0) remaining = [createDefaultDocument()];
+    if (remaining.length === 0) remaining = [createBlankDocument()];
 
     const nextCurrent =
       currentDocument?.id === id
@@ -320,7 +329,7 @@ export const useStore = create<AppState>((set, get) => ({
 
       // Ensure at least one document exists
       if (documents.length === 0) {
-        const defaultDoc = createDefaultDocument();
+        const defaultDoc = isFirstVisit ? createWelcomeDocument() : createBlankDocument();
         documents = [defaultDoc];
         currentDocument = defaultDoc;
       }
@@ -330,9 +339,10 @@ export const useStore = create<AppState>((set, get) => ({
         currentDocument = documents[0];
       }
 
-      set({ documents, currentDocument, settings, isDirty: false, sidebarOpen: isFirstVisit });
+      set({ documents, currentDocument, settings, isDirty: false, sidebarOpen: isFirstVisit, hydrated: true });
     } catch (e) {
       console.error("Failed to hydrate state:", e);
+      set({ hydrated: true });
     }
   },
 

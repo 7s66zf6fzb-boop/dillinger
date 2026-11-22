@@ -48,6 +48,8 @@ test("imports markdown/html files, preserves prior documents, inserts images, an
     page.getByRole("heading", { level: 2, name: "Imported.md" })
   ).toBeVisible();
   await expect(page.locator("#preview h1")).toHaveText("Imported");
+  // The document list lives in the sidebar, which starts closed for a returning visitor.
+  await page.getByRole("button", { name: "Toggle sidebar" }).click();
   await expect(
     page.getByRole("button", { name: "Playwright Smoke.md", exact: true })
   ).toBeVisible();

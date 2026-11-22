@@ -16,6 +16,7 @@ import { EditorSkeleton } from "@/components/ui/Skeleton";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useDesktopFiles } from "@/hooks/useDesktopFiles";
 import { usePrintShortcut } from "@/hooks/usePrintShortcut";
+import { useNightModeClass } from "@/hooks/useNightModeClass";
 import { importDocumentFile } from "@/lib/import";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +87,7 @@ function useIsSliding(width: number): boolean {
 }
 
 function EditorContent() {
+  useNightModeClass();
   const previewVisible = useStore((state) => state.previewVisible);
   const editorVisible = useStore((state) => state.editorVisible);
   const currentDocument = useStore((state) => state.currentDocument);
@@ -300,7 +302,7 @@ function EditorContent() {
             aria-hidden={previewWidth === 0}
             inert={previewWidth === 0 ? true : undefined}
             className={cn(
-              "relative shrink-0 overflow-hidden bg-[#FAFBFC]",
+              "relative shrink-0 overflow-hidden bg-[#FAFBFC] dark:bg-[#1e1e1e]",
               previewWidth === 0 && "invisible",
               "transition-[width] duration-300 ease-in-out motion-reduce:transition-none"
             )}

@@ -137,7 +137,7 @@ describe("useStore", () => {
 
       expect(state.documents).toHaveLength(2);
       expect(state.currentDocument?.title).toBe(DEFAULT_DOCUMENT_TITLE);
-      expect(state.currentDocument?.body).toBe(DEFAULT_DOCUMENT_BODY);
+      expect(state.currentDocument?.body).toBe("");
       expect(state.currentDocument?.id).not.toBe("existing-1");
     });
 
@@ -362,6 +362,8 @@ describe("useStore", () => {
 
       expect(state.documents).toHaveLength(1);
       expect(state.currentDocument?.title).toBe(DEFAULT_DOCUMENT_TITLE);
+      // A returning visitor who closed everything gets a blank document, not the guide
+      expect(state.currentDocument?.body).toBe("");
     });
 
     it("resets currentDocument to first document when stored current is invalid", () => {

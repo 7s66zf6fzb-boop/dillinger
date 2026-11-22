@@ -81,15 +81,20 @@ export function MonacoEditor() {
       base: "vs-dark",
       inherit: true,
       rules: [
-        { token: "keyword.md", foreground: "D3DAEA", fontStyle: "bold" },
-        { token: "string.link.md", foreground: "A0AABF" },
-        { token: "variable.md", foreground: "D3DAEA" },
-        { token: "markup.heading", foreground: "D3DAEA", fontStyle: "bold" },
-        { token: "comment.md", foreground: "6A9955" },
+        // Warm amber-yellow text for night use: text at least 7:1 on the background, line numbers 5.2:1.
+        { token: "", foreground: "F0D58C" },
+        { token: "keyword.md", foreground: "F5DC97", fontStyle: "bold" },
+        { token: "string.link.md", foreground: "C9B07A" },
+        { token: "variable.md", foreground: "F0D58C" },
+        { token: "markup.heading", foreground: "F5DC97", fontStyle: "bold" },
+        { token: "comment.md", foreground: "C9B07A", fontStyle: "italic" },
       ],
       colors: {
         "editor.background": "#1D212A",
-        "editor.foreground": "#D3DAEA",
+        "editor.foreground": "#F0D58C",
+        "editorLineNumber.foreground": "#A3906A",
+        "editorLineNumber.activeForeground": "#F0D58C",
+        "editorCursor.foreground": "#F5DC97",
       },
     });
 

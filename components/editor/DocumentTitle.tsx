@@ -57,7 +57,7 @@ export function DocumentTitle() {
             onChange={(e) => setTitle(e.target.value)}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
-            className="flex-1 bg-white px-2 py-1 rounded border border-border-light
+            className="flex-1 bg-bg-primary text-text-primary px-2 py-1 rounded border border-border-light
                        text-text-primary
                        focus:border-plum focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
           />

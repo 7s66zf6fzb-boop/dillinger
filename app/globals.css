@@ -3,9 +3,37 @@
 @tailwind utilities;
 @import "katex/dist/katex.min.css";
 
+/* Theme colors (Tailwind tokens read these). */
+:root {
+  --color-bg-primary: 255 255 255; /* #ffffff */
+  --color-text-primary: 55 61 73; /* #373D49 */
+  --color-text-invert: 255 255 255; /* #ffffff */
+  --color-text-muted: 160 170 191; /* #A0AABF */
+  --color-border-light: 232 232 232; /* #E8E8E8 */
+  --color-icon-default: 211 218 234; /* #D3DAEA */
+  --color-dropdown-link: 208 214 226; /* #D0D6E2 */
+}
+
+/*
+ * Night mode: white surfaces go dark and white text turns a warm amber-yellow, which has
+ * less blue light. Every text color here keeps at least 4.5:1 contrast (WCAG AA) on the dark
+ * surfaces it sits on, and meaning never rests on hue alone (links are underlined), so it
+ * reads the same with any kind of color blindness.
+ */
+html.dark {
+  --color-bg-primary: 29 33 42; /* #1D212A */
+  --color-text-primary: 240 213 140; /* #F0D58C */
+  --color-text-invert: 240 213 140; /* #F0D58C */
+  --color-text-muted: 201 176 122; /* #C9B07A */
+  --color-border-light: 58 63 75; /* #3A3F4B */
+  --color-icon-default: 230 203 133; /* #E6CB85 */
+  --color-dropdown-link: 230 203 133; /* #E6CB85 */
+  color-scheme: dark;
+}
+
 body {
-  background: #ffffff;
-  color: #373D49;
+  background: rgb(var(--color-bg-primary));
+  color: rgb(var(--color-text-primary));
 }
 
 /* Preview Styles */
@@ -13,7 +41,7 @@ body {
   font-family: Georgia, Cambria, serif;
   font-size: 14px;
   line-height: 1.7;
-  color: #373D49;
+  color: rgb(var(--color-text-primary));
 }
 
 .preview-html h1,
@@ -149,7 +177,7 @@ body {
 
 /* Dark Mode Styles */
 .dark.preview-html {
-  color: #d4d4d4;
+  color: #EBD08A;
 }
 
 .dark.preview-html h1,
@@ -158,7 +186,7 @@ body {
 .dark.preview-html h4,
 .dark.preview-html h5,
 .dark.preview-html h6 {
-  color: #e8e8e8;
+  color: #F5DC97;
 }
 
 .dark.preview-html h1 {
@@ -171,11 +199,13 @@ body {
 
 .dark.preview-html a {
   color: #35D7BB;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .dark.preview-html code {
   background: #2d2d2d;
-  color: #d4d4d4;
+  color: #EBD08A;
 }
 
 .dark.preview-html pre {
@@ -183,8 +213,8 @@ body {
 }
 
 .dark.preview-html blockquote {
-  border-left-color: #555;
-  color: #aaa;
+  border-left-color: #6B5D3E;
+  color: #C9B07A;
 }
 
 .dark.preview-html th,
@@ -208,6 +238,98 @@ body {
 
 .dark.preview-html hr {
   border-top-color: #444;
+}
+
+/* Format tips: each example is the Markdown as typed beside how it renders */
+.preview-html .tip-example {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75em;
+  margin: 0.5em 0 1.25em;
+}
+
+.preview-html .tip-col {
+  min-width: 0;
+}
+
+.preview-html .tip-label {
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--color-text-primary) / 0.75); /* 5.1:1 on white, 6.9:1 at night */
+  margin-bottom: 0.3em;
+}
+
+.preview-html .tip-source {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  height: calc(100% - 1.6em);
+}
+
+.preview-html .tip-result {
+  border: 1px solid rgb(var(--color-border-light));
+  border-radius: 3px;
+  padding: 0.6em 0.9em;
+  height: calc(100% - 1.6em);
+  overflow-x: auto;
+}
+
+.preview-html .tip-result > :first-child { margin-top: 0; }
+.preview-html .tip-result > :last-child { margin-bottom: 0; }
+.preview-html .tip-result h1,
+.preview-html .tip-result h2 { margin-top: 0.4em; }
+
+/* Format tips in the sidebar: compact, and in the sidebar's own text colors */
+.tips-compact.preview-html {
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+  color: rgb(var(--color-dropdown-link));
+}
+
+.tips-compact.preview-html h1,
+.tips-compact.preview-html h2,
+.tips-compact.preview-html h3 {
+  color: rgb(var(--color-text-invert));
+  border-bottom-color: #4F535B;
+}
+
+.tips-compact.preview-html h1 { font-size: 1.35em; margin-top: 0.5em; }
+.tips-compact.preview-html h2 { font-size: 1.15em; margin-top: 1.5em; }
+.tips-compact.preview-html h3 { font-size: 1em; }
+
+.tips-compact.preview-html code,
+.tips-compact.preview-html pre,
+.tips-compact.preview-html th {
+  background: #1D212A;
+  color: rgb(var(--color-dropdown-link));
+}
+
+.tips-compact.preview-html blockquote,
+.tips-compact.preview-html .tip-label {
+  color: rgb(var(--color-text-muted));
+}
+
+.tips-compact.preview-html th,
+.tips-compact.preview-html td {
+  border-color: #4F535B;
+  padding: 0.3em;
+}
+
+.tips-compact.preview-html .table-striped tbody tr:nth-child(odd) td {
+  background: #262A31;
+}
+
+/* The sidebar is narrow: stack Markdown above Result */
+.tips-compact.preview-html .tip-example {
+  grid-template-columns: 1fr;
+  gap: 0.4em;
+}
+
+.tips-compact.preview-html .tip-result {
+  border-color: #4F535B;
 }
 
 /* BuySellAds LogoBar */

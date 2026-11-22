@@ -13,8 +13,6 @@ export interface SaveOptions {
   quiet?: boolean;
 }
 
-let panelOpen = false;
-
 /**
  * Saves a document. Desktop app: back to its file, or through the macOS save panel when it
  * has no file yet or saveAs is set. Browser: downloads it as Markdown.
@@ -45,17 +43,11 @@ export function useSaveDocument(): (id: string, options?: SaveOptions) => Promis
         }
 
         if (saveAs || !doc.localFile) {
-          if (panelOpen) return false;
-          panelOpen = true;
-          try {
-            const saved = await saveLocalFileAs(body, filename, doc.localFile?.path);
-            if (!saved) return false;
-            linkLocalFile(doc.id, saved.path, saved.name, body);
-            if (!quiet) notify(`Saved "${saved.name}"`);
-            return true;
-          } finally {
-            panelOpen = false;
-          }
+          const saved = await saveLocalFileAs(body, filename, doc.localFile?.path);
+          if (!saved) return false;
+          linkLocalFile(doc.id, saved.path, saved.name, body);
+          if (!quiet) notify(`Saved "${saved.name}"`);
+          return true;
         }
 
         await saveLocalFile(doc.localFile.path, body);

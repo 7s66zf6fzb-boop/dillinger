@@ -20,6 +20,13 @@ vi.mock("@/lib/import", () => ({
   importDocumentFile: (...args: unknown[]) => mockImportDocumentFile(...args),
 }));
 
+const mockIsDesktopApp = vi.fn(() => false);
+const mockSaveLocalFileAs = vi.fn();
+vi.mock("@/lib/desktop", () => ({
+  isDesktopApp: () => mockIsDesktopApp(),
+  saveLocalFileAs: (...args: unknown[]) => mockSaveLocalFileAs(...args),
+}));
+
 const initialState = useStore.getState();
 
 function resetStore() {
@@ -234,6 +241,24 @@ describe("Navbar", () => {
       });
       vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test-url");
       vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    });
+
+    it("exports markdown through the save panel in the desktop app, without downloading", async () => {
+      mockIsDesktopApp.mockReturnValue(true);
+      mockSaveLocalFileAs.mockResolvedValue({ path: "/tmp/Test Document.md", name: "Test Document.md" });
+      vi.spyOn(globalThis, "fetch");
+      const user = userEvent.setup();
+      render(<Navbar />);
+
+      await user.click(screen.getByRole("button", { name: "Export document" }));
+      await user.click(screen.getByRole("menuitem", { name: /^Markdown$/ }));
+
+      await waitFor(() => {
+        expect(mockSaveLocalFileAs).toHaveBeenCalledWith("# Hello World", "Test Document.md");
+      });
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+      expect(mockNotify).toHaveBeenCalledWith('Exported "Test Document.md"');
+      mockIsDesktopApp.mockReturnValue(false);
     });
 
     it("exports as markdown and triggers download", async () => {

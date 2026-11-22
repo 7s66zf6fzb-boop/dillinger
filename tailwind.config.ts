@@ -9,20 +9,21 @@ const config: Config = {
   darkMode: "class",
   theme: {
     extend: {
+      // Tokens that night mode changes are CSS variables (set in app/globals.css).
       colors: {
         plum: "#35D7BB",
-        "bg-primary": "#ffffff",
+        "bg-primary": "rgb(var(--color-bg-primary) / <alpha-value>)",
         "bg-sidebar": "#2B2F36",
         "bg-navbar": "#373D49",
         "bg-highlight": "#1D212A",
         "bg-button-save": "#4A5261",
-        "text-primary": "#373D49",
-        "text-invert": "#ffffff",
-        "text-muted": "#A0AABF",
-        "border-light": "#E8E8E8",
+        "text-primary": "rgb(var(--color-text-primary) / <alpha-value>)",
+        "text-invert": "rgb(var(--color-text-invert) / <alpha-value>)",
+        "text-muted": "rgb(var(--color-text-muted) / <alpha-value>)",
+        "border-light": "rgb(var(--color-border-light) / <alpha-value>)",
         "border-settings": "#4F535B",
-        "icon-default": "#D3DAEA",
-        "dropdown-link": "#D0D6E2",
+        "icon-default": "rgb(var(--color-icon-default) / <alpha-value>)",
+        "dropdown-link": "rgb(var(--color-dropdown-link) / <alpha-value>)",
         switchery: "#4B5363",
       },
       fontFamily: {

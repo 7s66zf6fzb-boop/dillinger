@@ -8,8 +8,11 @@ import { useDropbox } from "@/hooks/useDropbox";
 import { useGoogleDrive } from "@/hooks/useGoogleDrive";
 import { useOneDrive } from "@/hooks/useOneDrive";
 import { useBitbucket } from "@/hooks/useBitbucket";
+import { useSaveDocument } from "@/hooks/useSaveDocument";
+import { useInert } from "@/hooks/useInert";
 import { DocumentList } from "./DocumentList";
 import { AboutPanel } from "./AboutPanel";
+import { FormatTips } from "@/components/tips/FormatTips";
 import { GitHubModal } from "@/components/modals/GitHubModal";
 import { DropboxModal } from "@/components/modals/DropboxModal";
 import { GoogleDriveModal } from "@/components/modals/GoogleDriveModal";
@@ -31,6 +34,7 @@ import {
   CloudUpload,
   FileText,
   Info,
+  BookOpen,
 } from "lucide-react";
 
 type ModalMode = "import" | "save";
@@ -42,12 +46,13 @@ interface SidebarUIState {
   saveOpen: boolean;
   documentsOpen: boolean;
   aboutOpen: boolean;
+  tipsOpen: boolean;
   activeModal: { target: ModalTarget; mode: ModalMode } | null;
   deleteModalOpen: boolean;
 }
 
 type SidebarAction =
-  | { type: "toggle"; section: "servicesOpen" | "importOpen" | "saveOpen" | "documentsOpen" | "aboutOpen" }
+  | { type: "toggle"; section: "servicesOpen" | "importOpen" | "saveOpen" | "documentsOpen" | "aboutOpen" | "tipsOpen" }
   | { type: "openModal"; target: ModalTarget; mode: ModalMode }
   | { type: "closeModal" }
   | { type: "openDeleteModal" }
@@ -59,6 +64,7 @@ const initialUIState: SidebarUIState = {
   saveOpen: false,
   documentsOpen: true,
   aboutOpen: false,
+  tipsOpen: false,
   activeModal: null,
   deleteModalOpen: false,
 };
@@ -85,15 +91,20 @@ export function Sidebar() {
   const createDocument = useStore((state) => state.createDocument);
   const deleteDocument = useStore((state) => state.deleteDocument);
   const persist = useStore((state) => state.persist);
+  const saveDocument = useSaveDocument();
   const toggleSidebar = useStore((state) => state.toggleSidebar);
   const { notify } = useToast();
 
   const [ui, dispatch] = useReducer(uiReducer, initialUIState);
+  // The closed sidebar stays in the page so it can slide; inert keeps focus out of it then.
+  const asideRef = useInert<HTMLElement>(!sidebarOpen);
 
+  // Saves the open document to a file: the save panel the first time (desktop app), the same
+  // file after that. In a browser it downloads the file.
   const handleSave = useCallback(() => {
     persist();
-    notify("Documents saved");
-  }, [persist, notify]);
+    if (currentDocument) saveDocument(currentDocument.id);
+  }, [persist, saveDocument, currentDocument]);
 
   const handleDeleteClick = useCallback(() => {
     if (!currentDocument) return;
@@ -123,6 +134,8 @@ export function Sidebar() {
         aria-hidden="true"
       />
       <aside
+        ref={asideRef}
+        aria-hidden={!sidebarOpen}
         className={`fixed sm:relative w-sidebar shrink-0 bg-bg-sidebar h-dvh flex flex-col z-sidebar
                     transition-all duration-250
                     ${sidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0 sm:-ml-[270px]"}`}
@@ -171,6 +184,16 @@ export function Sidebar() {
           </CollapsibleSection>
 
           <CollapsibleSection
+            label="Markdown Format Tips"
+            panelId="tips-panel"
+            icon={<BookOpen size={14} />}
+            isOpen={ui.tipsOpen}
+            onToggle={() => dispatch({ type: "toggle", section: "tipsOpen" })}
+          >
+            <FormatTips variant="sidebar" />
+          </CollapsibleSection>
+
+          <CollapsibleSection
             label="About"
             panelId="about-panel"
             icon={<Info size={14} />}
@@ -199,12 +222,12 @@ export function Sidebar() {
                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum focus-visible:ring-offset-2 focus-visible:ring-offset-bg-sidebar"
           >
             <Save size={18} />
-            Save Session
+            Save Document
           </button>
           <button
             onClick={handleDeleteClick}
             disabled={documents.length <= 1}
-            className={`w-full bg-red-600 text-text-invert py-2 px-4 rounded font-medium
+            className={`w-full bg-red-600 dark:bg-red-800 text-text-invert py-2 px-4 rounded font-medium
                        flex items-center justify-center gap-2
                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-sidebar
                        ${documents.length <= 1 ? "opacity-60 cursor-not-allowed" : "hover:opacity-90 active:scale-[0.97] transition-all"}`}
@@ -266,6 +289,9 @@ function CollapsibleSection({
   icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  // A collapsed section keeps its height animation; inert keeps focus out of its hidden items.
+  const panelRef = useInert<HTMLDivElement>(!isOpen);
+
   return (
     <div className="mb-3">
       <button
@@ -286,7 +312,9 @@ function CollapsibleSection({
         />
       </button>
       <div
+        ref={panelRef}
         id={panelId}
+        aria-hidden={!isOpen}
         className="grid transition-[grid-template-rows] duration-200"
         style={{
           gridTemplateRows: isOpen ? "1fr" : "0fr",

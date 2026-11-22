@@ -34,7 +34,13 @@ export interface SavedFile {
   name: string;
 }
 
-/** Shows the macOS save panel and writes the file. Resolves null if the user cancels. */
+// One save panel at a time, whether Save, Save As or Export opened it.
+let savePanelOpen = false;
+
+/**
+ * Shows the macOS save panel and writes the file. Resolves null if the user cancels; throws if
+ * a save panel is already open, so the caller can say so instead of silently doing nothing.
+ */
 export async function saveLocalFileAs(
   content: string,
   suggestedName: string,
@@ -42,11 +48,17 @@ export async function saveLocalFileAs(
 ): Promise<SavedFile | null> {
   const t = tauri();
   if (!t) throw new Error("Saving to disk needs the Dillinger desktop app");
-  return t.invoke<SavedFile | null>("save_file_as", {
-    content,
-    suggestedName,
-    currentPath: currentPath ?? null,
-  });
+  if (savePanelOpen) throw new Error("A save panel is already open.");
+  savePanelOpen = true;
+  try {
+    return await t.invoke<SavedFile | null>("save_file_as", {
+      content,
+      suggestedName,
+      currentPath: currentPath ?? null,
+    });
+  } finally {
+    savePanelOpen = false;
+  }
 }
 
 /** Opens the macOS print dialog for the page (WKWebView does not act on window.print()). */
@@ -54,6 +66,13 @@ export async function printPage(): Promise<void> {
   const t = tauri();
   if (!t) throw new Error("Native printing needs the Dillinger desktop app");
   await t.invoke("print_page");
+}
+
+/** Opens (or brings forward) the separate Markdown format tips window. */
+export async function openTipsWindow(): Promise<void> {
+  const t = tauri();
+  if (!t) throw new Error("Separate windows need the Dillinger desktop app");
+  await t.invoke("open_tips_window");
 }
 
 export async function saveLocalFile(path: string, content: string): Promise<void> {

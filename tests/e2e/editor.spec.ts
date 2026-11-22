@@ -510,7 +510,9 @@ test.describe("Sidebar toggle", () => {
     await page.goto("/");
 
     // Sidebar should be closed by default
-    await expect(page.locator("aside")).toHaveCount(0);
+    // Closed: still in the page for the slide, but out of the accessibility tree and focus order
+    await expect(page.getByRole("complementary")).toHaveCount(0);
+    await expect(page.locator("aside")).toHaveAttribute("inert", "");
 
     // Open sidebar
     await page.getByRole("button", { name: "Toggle sidebar" }).click();
@@ -521,7 +523,9 @@ test.describe("Sidebar toggle", () => {
 
     // Close sidebar
     await page.getByRole("button", { name: "Toggle sidebar" }).click();
-    await expect(page.locator("aside")).toHaveCount(0);
+    // Closed: still in the page for the slide, but out of the accessibility tree and focus order
+    await expect(page.getByRole("complementary")).toHaveCount(0);
+    await expect(page.locator("aside")).toHaveAttribute("inert", "");
   });
 
   test("sidebar shows the documents section with seeded document", async ({

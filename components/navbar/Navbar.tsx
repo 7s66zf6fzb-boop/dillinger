@@ -5,6 +5,8 @@ import { useStore } from "@/stores/store";
 import { useToast } from "@/components/ui/Toast";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { importDocumentFile } from "@/lib/import";
+import { isDesktopApp, saveLocalFileAs } from "@/lib/desktop";
+import { ensureExtension } from "@/lib/document";
 import {
   Menu,
   Eye,
@@ -113,6 +115,21 @@ export function Navbar() {
       : format.toUpperCase();
 
     try {
+      // Desktop app: ask where to put the Markdown copy instead of dropping it in Downloads.
+      // The open document stays linked to its own file (this is a copy, not Save As).
+      if (format === "markdown" && isDesktopApp()) {
+        try {
+          const saved = await saveLocalFileAs(
+            currentDocument.body,
+            ensureExtension(currentDocument.title, ".md")
+          );
+          if (saved) notify(`Exported "${saved.name}"`);
+        } catch (error) {
+          notify(error instanceof Error ? error.message : String(error));
+        }
+        return;
+      }
+
       notify(`Preparing ${formatLabel}...`);
 
       const response = await fetch(`/api/export/${format}`, {
