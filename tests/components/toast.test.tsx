@@ -1,7 +1,7 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, act } from "@testing-library/react";
-import { ToastProvider, useToast } from "@/components/ui/Toast";
+import { ToastProvider, useToast, TOAST_EXIT_MS } from "@/components/ui/Toast";
 
 function ToastTrigger({ message, duration }: { message: string; duration?: number }) {
   const { notify } = useToast();
@@ -70,7 +70,12 @@ describe("Toast", () => {
     act(() => {
       vi.advanceTimersByTime(2000);
     });
+    // Still fading out
+    expect(screen.getByText("Temporary")).toBeInTheDocument();
 
+    act(() => {
+      vi.advanceTimersByTime(TOAST_EXIT_MS);
+    });
     expect(screen.queryByText("Temporary")).not.toBeInTheDocument();
   });
 
@@ -88,7 +93,7 @@ describe("Toast", () => {
     expect(screen.getByText("Default timing")).toBeVisible();
 
     act(() => {
-      vi.advanceTimersByTime(1);
+      vi.advanceTimersByTime(1 + TOAST_EXIT_MS);
     });
     expect(screen.queryByText("Default timing")).not.toBeInTheDocument();
   });
@@ -107,6 +112,26 @@ describe("Toast", () => {
     expect(screen.getByText("Second toast")).toBeVisible();
   });
 
+  it("dismisses only the clicked toast when two appear in the same millisecond", async () => {
+    renderWithProvider(<MultiToastTrigger />);
+
+    // Fake timers freeze Date.now(), so both toasts are created in the same millisecond.
+    await act(async () => {
+      screen.getByRole("button", { name: "First" }).click();
+      screen.getByRole("button", { name: "Second" }).click();
+    });
+
+    await act(async () => {
+      screen.getAllByRole("button", { name: "Dismiss notification" })[0].click();
+    });
+    act(() => {
+      vi.advanceTimersByTime(TOAST_EXIT_MS);
+    });
+
+    expect(screen.queryByText("First toast")).not.toBeInTheDocument();
+    expect(screen.getByText("Second toast")).toBeVisible();
+  });
+
   it("dismisses a toast when clicking the dismiss button", async () => {
     renderWithProvider(<ToastTrigger message="Dismissible" duration={0} />);
 
@@ -117,6 +142,9 @@ describe("Toast", () => {
 
     await act(async () => {
       screen.getByRole("button", { name: "Dismiss notification" }).click();
+    });
+    act(() => {
+      vi.advanceTimersByTime(TOAST_EXIT_MS);
     });
     expect(screen.queryByText("Dismissible")).not.toBeInTheDocument();
   });

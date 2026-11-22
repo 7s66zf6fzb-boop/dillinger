@@ -20,6 +20,12 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | null>(null);
 
+/** How long a dismissed toast takes to fade out before it is removed. */
+export const TOAST_EXIT_MS = 150;
+
+// Unique even for toasts shown in the same millisecond (Date.now() alone was not).
+let nextToastId = 0;
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [exiting, setExiting] = useState<Set<string>>(new Set());
@@ -33,11 +39,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         next.delete(id);
         return next;
       });
-    }, 150);
+    }, TOAST_EXIT_MS);
   }, []);
 
   const notify = useCallback((message: string, duration = 3000) => {
-    const id = Date.now().toString();
+    const id = String(++nextToastId);
     setToasts((prev) => [...prev, { id, message }]);
 
     if (duration > 0) {
