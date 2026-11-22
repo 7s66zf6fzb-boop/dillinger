@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "editor",
-  "description": "Lets the local editor page read files opened from Finder, save them (in place or to a new location), and open the print dialog.",
+  "description": "Lets the local editor page read files opened from Finder, save them (in place or to a new location), open the print dialog, and open the format tips window.",
   "windows": [
     "main"
   ],
@@ -14,6 +14,7 @@
     "allow-take-opened-files",
     "allow-save-file",
     "allow-save-file-as",
-    "allow-print-page"
+    "allow-print-page",
+    "allow-open-tips-window"
   ]
 }

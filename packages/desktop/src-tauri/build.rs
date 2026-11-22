@@ -3,7 +3,7 @@ fn main() {
     // capabilities/ can grant them to the editor page served from localhost.
     tauri_build::try_build(
         tauri_build::Attributes::new().app_manifest(
-            tauri_build::AppManifest::new().commands(&["take_opened_files", "save_file", "save_file_as", "print_page"]),
+            tauri_build::AppManifest::new().commands(&["take_opened_files", "save_file", "save_file_as", "print_page", "open_tips_window"]),
         ),
     )
     .expect("failed to run tauri-build");

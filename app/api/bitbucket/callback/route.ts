@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { isSecureCookieRequest } from "@/lib/cookies";
 import { cookies } from "next/headers";
 import { getAppUrl } from "@/lib/env";
 
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
       expires_at: Date.now() + (tokens.expires_in * 1000),
     }), {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureCookieRequest(request),
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
