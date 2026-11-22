@@ -1,9 +1,13 @@
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GitHubModal } from "@/components/modals/GitHubModal";
 import { useStore } from "@/stores/store";
+import type { useGitHub } from "@/hooks/useGitHub";
+
+// The mock returns the real hook's shape, so overrides are type-checked against it.
+type GitHubHook = ReturnType<typeof useGitHub>;
 
 const mockFetchOrgs = vi.fn();
 const mockFetchRepos = vi.fn();
@@ -16,7 +20,7 @@ const mockSetCurrent = vi.fn();
 const mockReset = vi.fn();
 const mockDisconnect = vi.fn();
 
-const connectedDefaults = {
+const connectedDefaults: GitHubHook = {
   isConnected: true,
   isLoading: false,
   user: { login: "testuser", name: "Test User", avatar_url: "" },
@@ -37,7 +41,7 @@ const connectedDefaults = {
   reset: mockReset,
 };
 
-let githubOverrides: Partial<typeof connectedDefaults> = {};
+let githubOverrides: Partial<GitHubHook> = {};
 
 vi.mock("@/hooks/useGitHub", () => ({
   useGitHub: () => ({ ...connectedDefaults, ...githubOverrides }),
@@ -266,9 +270,6 @@ describe("GitHubModal", () => {
 
     it("selecting a file calls fetchFileContent and imports the document", async () => {
       const user = userEvent.setup();
-      const mockNotify = vi.fn();
-
-      vi.mocked(await import("@/components/ui/Toast")).useToast = () => ({ notify: mockNotify }) as any;
 
       mockFetchFileContent.mockResolvedValue({ content: "# Imported content", sha: "abc" });
 
@@ -286,6 +287,9 @@ describe("GitHubModal", () => {
       await user.click(screen.getByText("docs/guide.md"));
 
       expect(mockFetchFileContent).toHaveBeenCalledWith("docs/guide.md");
+      await waitFor(() => {
+        expect(useStore.getState().currentDocument).toMatchObject({ title: "guide.md", body: "# Imported content" });
+      });
     });
 
     it("shows 'No markdown files found' when files list is empty", async () => {
@@ -469,7 +473,7 @@ describe("GitHubModal", () => {
     it("does not save when no current document exists", async () => {
       const user = userEvent.setup();
 
-      useStore.setState({ currentDocument: null }, true);
+      useStore.setState({ currentDocument: null });
 
       githubOverrides = {
         repos: [{ name: "my-repo", full_name: "testuser/my-repo", private: false, default_branch: "main" }],
