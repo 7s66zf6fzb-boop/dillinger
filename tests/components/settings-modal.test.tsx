@@ -55,9 +55,27 @@ describe("SettingsModal", () => {
     expect(nightModeSwitch).toHaveAttribute("aria-checked", "true");
   });
 
+  it("returns focus to what opened it when closed", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button onClick={() => useStore.getState().toggleSettings()}>Open settings</button>
+        <SettingsModal />
+      </>
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open settings" }));
+    expect(screen.getByRole("button", { name: "Close settings" })).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("button", { name: "Open settings" })).toHaveFocus();
+  });
+
   it("does not render when settingsOpen is false", () => {
     render(<SettingsModal />);
     expect(screen.queryByRole("dialog")).toBeNull();
+    // Kept in the page for the slide animation, but out of reach of keyboard focus
+    expect(screen.getByRole("dialog", { hidden: true })).toHaveAttribute("inert");
   });
 
   it("toggles auto-save setting", async () => {

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useStore } from "@/stores/store";
 import { X } from "lucide-react";
+import { useInert } from "@/hooks/useInert";
 
 export function SettingsModal() {
   const settingsOpen = useStore((state) => state.settingsOpen);
@@ -10,6 +11,10 @@ export function SettingsModal() {
   const toggleSettings = useStore((state) => state.toggleSettings);
   const updateSettings = useStore((state) => state.updateSettings);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  // Stays in the page while closed so it can slide; inert keeps focus out of it then.
+  const dialogRef = useInert<HTMLDivElement>(!settingsOpen);
+  // Where focus was before opening, so closing can put it back (inert would drop it on <body>)
+  const openerRef = useRef<HTMLElement | null>(null);
 
   // Handle Escape key
   useEffect(() => {
@@ -22,15 +27,19 @@ export function SettingsModal() {
     };
 
     document.addEventListener("keydown", handleKeyDown);
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeButtonRef.current?.focus();
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      openerRef.current?.focus();
     };
   }, [settingsOpen, toggleSettings]);
 
   return (
     <div
+      ref={dialogRef}
+      aria-hidden={!settingsOpen}
       className={`fixed inset-0 z-settings transition-opacity duration-300
                   ${settingsOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
       style={{ transitionTimingFunction: "cubic-bezier(0.25, 1, 0.5, 1)" }}
